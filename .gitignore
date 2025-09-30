@@ -1,32 +1,39 @@
-# Prerequisites
-*.d
-
-# Compiled Object files
-*.slo
-*.lo
+# Artefatos de compilação do Arduino/AVR
 *.o
-*.obj
-
-# Precompiled Headers
-*.gch
-*.pch
-
-# Compiled Dynamic libraries
-*.so
-*.dylib
-*.dll
-
-# Fortran module files
-*.mod
-*.smod
-
-# Compiled Static libraries
-*.lai
-*.la
 *.a
-*.lib
+*.d
+*.elf
+*.hex
+*.bin
+*.eep
+*.lss
+*.map
+*.srec
+*.sym
 
-# Executables
-*.exe
-*.out
-*.app
+# Pastas de compilação (usadas pelo Arduino IDE 2.x e PlatformIO)
+build/
+*.build/
+.pio/
+
+# Arquivos gerados pelo sistema operacional
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Arquivos específicos de IDEs (VS Code, etc.)
+.vscode/
+.replit
+.c9/
+*.swp
+*.swo
+
+# Configuração local e dados sensíveis
+# IMPORTANTE: Nunca envie arquivos com senhas ou chaves de API!
+*secrets.h
+*.local
+*.user
