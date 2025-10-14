@@ -1,57 +1,66 @@
 #include "MIDIUSB.h"
 
-// --- Pin and Variable Definitions ---
-const int NUM_POTS = 2; // Total number of potentiometers
-
-// Assign analog pins to an array
-const int POT_PINS[NUM_POTS] = {A0, A1};
-
-// Assign a unique MIDI CC number to each potentiometer
-const int MIDI_CC_NUMBERS[NUM_POTS] = {1, 2}; // e.g., CC#1, CC#2
-
-// Store the last sent value for each pot to avoid flooding the MIDI bus
-int lastSentValues[NUM_POTS];
-
-// --- MIDI Helper Function ---
-
+// --- MIDI Helper Function (remains global) ---
 // Sends a MIDI Control Change message
-// event type 0x0B = control change
 void controlChange(byte channel, byte control, byte value) {
   midiEventPacket_t event = {0x0B, 0xB0 | channel, control, value};
   MidiUSB.sendMIDI(event);
 }
 
+// --- Potentiometer Class Definition ---
+class Potentiometer {
+  private:
+    byte pin;         // The analog pin the potentiometer is connected to
+    byte ccNumber;    // The MIDI CC number for this potentiometer
+    int lastValue;    // The last MIDI value sent
+
+  public:
+    // Constructor: runs when a new Potentiometer object is created
+    Potentiometer(byte analogPin, byte midiCcNumber) {
+      pin = analogPin;
+      ccNumber = midiCcNumber;
+      lastValue = -1; // Initialize to an invalid value to force the first send
+    }
+
+    // Update function: reads the pot and sends MIDI if the value has changed
+    void update() {
+      // 1. Read the raw sensor value (0-1023)
+      int sensorValue = analogRead(pin);
+
+      // 2. Map the value to the MIDI range (0-127)
+      int midiValue = map(sensorValue, 0, 1023, 0, 127);
+
+      // 3. Only send a message if the value has changed
+      if (midiValue != lastValue) {
+        controlChange(0, ccNumber, midiValue); // Send on MIDI channel 0
+        MidiUSB.flush();
+        lastValue = midiValue; // Update the last sent value
+      }
+    }
+};
+
 // --- Main Program ---
 
+// Create instances of the Potentiometer class in an array
+Potentiometer pots[] = {
+  Potentiometer(A0, 1),  // Potentiometer 1 on pin A0, sending on CC #1
+  Potentiometer(A1, 2)   // Potentiometer 2 on pin A1, sending on CC #2
+};
+
+// Calculate the number of potentiometers based on the array size
+const int NUM_POTS = sizeof(pots) / sizeof(pots[0]);
+
+
 void setup() {
-  // Initialize last sent values to an impossible number (-1)
-  // to ensure the first reading is always sent.
-  for (int i = 0; i < NUM_POTS; i++) {
-    lastSentValues[i] = -1;
-  }
+  // Setup is now handled by the class constructors, so this is empty.
 }
 
 void loop() {
-  // Loop through each potentiometer
+  // Loop through each potentiometer object and call its update function
   for (int i = 0; i < NUM_POTS; i++) {
-    // 1. Read the raw sensor value (0-1023) from the current pot
-    int sensorValue = analogRead(POT_PINS[i]);
-
-    // 2. Map the sensor value to the MIDI CC range (0-127)
-    int midiValue = map(sensorValue, 0, 1023, 0, 127);
-
-    // 3. Only send a message if the value for this pot has changed
-    if (midiValue != lastSentValues[i]) {
-      
-      // Send the MIDI CC message for the corresponding pot
-      controlChange(0, MIDI_CC_NUMBERS[i], midiValue); // Channel 0
-      MidiUSB.flush();
-
-      // Update the last value sent for this specific pot
-      lastSentValues[i] = midiValue;
-    }
+    pots[i].update();
   }
 
-  // A small delay to keep readings stable after checking all pots
+  // A small delay to keep readings stable
   delay(10);
 }
